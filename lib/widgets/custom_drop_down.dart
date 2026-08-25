@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 
-class CustomInput extends StatelessWidget {
+class CustomDropdown extends StatelessWidget {
   final String label;
   final String hintText;
-  final TextEditingController? controller;
+  final List<String> items;
+  final String? value;
+  final ValueChanged<String?>? onChanged;
   final String? errorText;
-  final TextInputType keyboardType;
-  final ValueChanged<String>? onChanged;
-  final String? prefixText;
 
-  const CustomInput({
+  const CustomDropdown({
     super.key,
     required this.label,
     required this.hintText,
-    this.controller,
-    this.errorText,
-    this.keyboardType = TextInputType.text,
+    required this.items,
+    this.value,
     this.onChanged,
-    this.prefixText,
+    this.errorText,
   });
 
   static const Color _errorColor = Color(0xFFFF5A5A);
@@ -47,10 +45,13 @@ class CustomInput extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           height: 48,
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            onChanged: onChanged,
+          child: DropdownButtonFormField<String>(
+            initialValue: value,
+            isExpanded: true,
+            icon: Icon(
+              Icons.keyboard_arrow_down,
+              color: Color(0xFF1D1D1D),
+            ),
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontSize: 14,
@@ -58,29 +59,10 @@ class CustomInput extends StatelessWidget {
               color: Color(0xFF1D1D1D),
             ),
             decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFFB5B5BA),
-              ),
-
-              // Telefon uchun doim ko'rinadigan "+998 " prefiksi
-              prefixText: prefixText,
-              prefixStyle: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFF1D1D1D),
-              ),
-
-              // Matnni ramka ichida ushlab turadi
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 10,
               ),
-
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide(
@@ -88,7 +70,6 @@ class CustomInput extends StatelessWidget {
                   width: 1,
                 ),
               ),
-
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide(
@@ -96,11 +77,35 @@ class CustomInput extends StatelessWidget {
                   width: 1,
                 ),
               ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: borderColor,
+                  width: 1,
+                ),
+              ),
             ),
+            hint: Text(
+              hintText,
+              style: TextStyle(
+                fontFamily: 'Montserrat',
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFFB5B5BA),
+              ),
+            ),
+            items: items
+                .map(
+                  (item) => DropdownMenuItem<String>(
+                value: item,
+                child: Text(item),
+              ),
+            )
+                .toList(),
+            onChanged: onChanged,
           ),
         ),
 
-        // Xato matni
         if (hasError) ...[
           SizedBox(height: 6),
           Text(
