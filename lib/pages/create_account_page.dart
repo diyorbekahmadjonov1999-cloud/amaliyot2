@@ -208,7 +208,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       CustomInput(
                         label: 'Phone number',
                         hintText: '(99) 928-48-14',
-                        prefixText: '+998 ',
                         controller: _phoneController,
                         errorText: _phoneError,
                         keyboardType: TextInputType.phone,
