@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CustomInput extends StatelessWidget {
   final String label;
@@ -8,6 +9,7 @@ class CustomInput extends StatelessWidget {
   final TextInputType keyboardType;
   final ValueChanged<String>? onChanged;
   final String? prefixText;
+  final List<TextInputFormatter>? inputFormatters;
 
   const CustomInput({
     super.key,
@@ -18,6 +20,7 @@ class CustomInput extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.onChanged,
     this.prefixText,
+    this.inputFormatters,
   });
 
   static const Color _errorColor = Color(0xFFFF5A5A);
@@ -51,6 +54,7 @@ class CustomInput extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             onChanged: onChanged,
+            inputFormatters: inputFormatters,
             style: TextStyle(
               fontFamily: 'Montserrat',
               fontSize: 14,

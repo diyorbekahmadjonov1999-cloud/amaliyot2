@@ -81,7 +81,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     if (_fullNameError == null && _phoneError == null) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const CarDetailsPage()),
+        MaterialPageRoute(
+          builder: (context) => CarDetailsPage(
+            fullName: _fullNameController.text.trim(),
+            phoneNumber: _phoneController.text.trim(),
+          ),
+        ),
       );
     }
   }

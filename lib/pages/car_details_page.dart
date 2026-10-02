@@ -4,9 +4,20 @@ import 'package:google_fonts/google_fonts.dart';
 import '../backgrounds/create_account_background.dart';
 import '../widgets/create_account_bottom.dart';
 import '../widgets/custom_drop_down.dart';
+import '../models/car_brand.dart';
+import '../models/car_model.dart';
+import '../services/car_service.dart';
+import 'car_mileage_page.dart';
 
 class CarDetailsPage extends StatefulWidget {
-  const CarDetailsPage({super.key});
+  final String fullName;
+  final String phoneNumber;
+
+  const CarDetailsPage({
+    super.key,
+    required this.fullName,
+    required this.phoneNumber,
+  });
 
   @override
   State<CarDetailsPage> createState() => _CarDetailsPageState();
@@ -15,32 +26,74 @@ class CarDetailsPage extends StatefulWidget {
 class _CarDetailsPageState extends State<CarDetailsPage> {
   static const String _addNewOption = '+ Boshqa (qo\'lda kiritish)';
 
-  // TODO: haqiqiy ma'lumotlar manbasi (API) bilan almashtiring
-  List<String> _brands = ['Chevrolet', 'Kia', 'Hyundai', 'Toyota', 'BMW'];
-  List<String> _models = [];
+  // API'dan kelgan brend va model ro'yxatlari
+  List<CarBrand> _brands = [];
+  List<CarModel> _models = [];
 
-  // Yil: 2050 dan 1990 gacha (eng yangisi tepada), keyin qo'lda qo'shilganlar bilan kengayadi
+  bool _isLoadingBrands = true;
+  bool _isLoadingModels = false;
+  String? _loadError;
+
+  // Yil: 2027 dan 2000 gacha (eng yangisi tepada), keyin qo'lda qo'shilganlar bilan kengayadi
   List<String> _years =
-  List.generate(2050 - 1990 + 1, (i) => '${2050 - i}');
+  List.generate(2027 - 2000 + 1, (i) => '${2027 - i}');
 
-  String? _selectedBrand;
-  String? _selectedModel;
+  CarBrand? _selectedBrand;
+  CarModel? _selectedModel;
   String? _selectedYear;
 
   String? _brandError;
   String? _modelError;
   String? _yearError;
 
-  // Har bir brand uchun namunaviy modellar (haqiqiy loyihada API'dan olinadi)
-  final Map<String, List<String>> _brandModels = {
-    'Chevrolet': ['Cobalt', 'Nexia', 'Malibu', 'Tracker'],
-    'Kia': ['Rio', 'Sportage', 'Cerato'],
-    'Hyundai': ['Elantra', 'Tucson', 'Sonata'],
-    'Toyota': ['Camry', 'Corolla', 'Land Cruiser'],
-    'BMW': ['320i', 'X5', 'X6'],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _loadBrands();
+  }
 
-  // "+ Boshqa" tanlanganda ism kiritish uchun umumiy dialog (brend/model uchun)
+  Future<void> _loadBrands() async {
+    setState(() {
+      _isLoadingBrands = true;
+      _loadError = null;
+    });
+
+    try {
+      final brands = await CarService.getBrands();
+      setState(() {
+        _brands = brands;
+        _isLoadingBrands = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingBrands = false;
+        _loadError = 'Brendlarni yuklab bo\'lmadi. Internetni tekshiring.';
+      });
+    }
+  }
+
+  Future<void> _loadModels(int brandId) async {
+    setState(() {
+      _isLoadingModels = true;
+      _models = [];
+      _selectedModel = null;
+    });
+
+    try {
+      final models = await CarService.getModels(brandId);
+      setState(() {
+        _models = models;
+        _isLoadingModels = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingModels = false;
+        _loadError = 'Modellarni yuklab bo\'lmadi. Internetni tekshiring.';
+      });
+    }
+  }
+
+  // "+ Boshqa" tanlanganda ism kiritish uchun umumiy dialog (hozircha faqat ko'rinish uchun)
   Future<void> _showAddDialog({
     required String title,
     required void Function(String value) onAdd,
@@ -148,53 +201,45 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     );
   }
 
-  void _handleBrandChanged(String? brand) {
-    if (brand == _addNewOption) {
+  void _handleBrandChanged(String? brandName) {
+    if (brandName == _addNewOption) {
       _showAddDialog(
         title: 'Yangi brend qo\'shish',
         onAdd: (value) {
+          // DIQQAT: bu yerda backend'dan haqiqiy id kelmaydi,
+          // shuning uchun hozircha faqat ko'rinish uchun ishlaydi.
           setState(() {
-            if (!_brands.contains(value)) {
-              _brands = [..._brands, value];
-            }
-            _brandModels.putIfAbsent(value, () => []);
-            _selectedBrand = value;
-            _selectedModel = null;
-            _models = _brandModels[value] ?? [];
-            _brandError = null;
+            _brandError = 'Ro\'yxatda yo\'q brend hali qo\'llab-quvvatlanmaydi.';
           });
         },
       );
       return;
     }
 
+    final brand = _brands.firstWhere((b) => b.name == brandName);
+
     setState(() {
       _selectedBrand = brand;
-      _selectedModel = null;
-      _models = brand != null ? (_brandModels[brand] ?? []) : [];
       _brandError = null;
     });
+
+    _loadModels(brand.id);
   }
 
-  void _handleModelChanged(String? model) {
-    if (model == _addNewOption) {
+  void _handleModelChanged(String? modelName) {
+    if (modelName == _addNewOption) {
       _showAddDialog(
         title: 'Yangi model qo\'shish',
         onAdd: (value) {
           setState(() {
-            if (!_models.contains(value)) {
-              _models = [..._models, value];
-            }
-            if (_selectedBrand != null) {
-              _brandModels[_selectedBrand!] = _models;
-            }
-            _selectedModel = value;
-            _modelError = null;
+            _modelError = 'Ro\'yxatda yo\'q model hali qo\'llab-quvvatlanmaydi.';
           });
         },
       );
       return;
     }
+
+    final model = _models.firstWhere((m) => m.name == modelName);
 
     setState(() {
       _selectedModel = model;
@@ -210,6 +255,18 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
     });
 
     if (_brandError == null && _modelError == null && _yearError == null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CarMileagePage(
+            fullName: widget.fullName,
+            phoneNumber: widget.phoneNumber,
+            brandId: _selectedBrand!.id,
+            carModelId: _selectedModel!.id,
+            carYear: int.parse(_selectedYear!),
+          ),
+        ),
+      );
     }
   }
 
@@ -314,7 +371,27 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                     ),
                   ),
 
-                  SizedBox(height: 50),
+                  SizedBox(height: 24),
+
+                  if (_isLoadingBrands)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF009577),
+                      ),
+                    ),
+
+                  if (_loadError != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        _loadError!,
+                        style: TextStyle(color: Colors.red, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+
+                  SizedBox(height: 26),
 
                   // Brand va Model yonma-yon
                   Row(
@@ -324,23 +401,29 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
                         child: CustomDropdown(
                           label: 'Brand',
                           hintText: 'Select brand',
-                          items: [..._brands, _addNewOption],
-                          value: _selectedBrand,
+                          items: [
+                            ..._brands.map((b) => b.name),
+                            _addNewOption,
+                          ],
+                          value: _selectedBrand?.name,
                           errorText: _brandError,
-                          onChanged: _handleBrandChanged,
+                          onChanged: _isLoadingBrands ? null : _handleBrandChanged,
                         ),
                       ),
                       SizedBox(width: 16),
                       Expanded(
                         child: CustomDropdown(
                           label: 'Model',
-                          hintText: 'Select model',
+                          hintText: _isLoadingModels ? 'Yuklanmoqda...' : 'Select model',
                           items: _selectedBrand == null
                               ? const []
-                              : [..._models, _addNewOption],
-                          value: _selectedModel,
+                              : [
+                            ..._models.map((m) => m.name),
+                            _addNewOption,
+                          ],
+                          value: _selectedModel?.name,
                           errorText: _modelError,
-                          onChanged: _selectedBrand == null
+                          onChanged: (_selectedBrand == null || _isLoadingModels)
                               ? null
                               : _handleModelChanged,
                         ),

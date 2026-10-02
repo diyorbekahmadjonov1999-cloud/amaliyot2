@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../pages/sign_in_page.dart';
+
 class CreateAccountBottom extends StatelessWidget {
   const CreateAccountBottom({super.key});
 
@@ -38,7 +40,17 @@ class CreateAccountBottom extends StatelessWidget {
               Positioned(
                 left: 40,
                 bottom: 60,
-                child: _RotatedSignInButton(),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignInPage(),
+                      ),
+                    );
+                  },
+                  child: _RotatedSignInButton(),
+                ),
               ),
 
               Positioned(
@@ -135,4 +147,3 @@ class _CurvedArrowIcon extends StatelessWidget {
     );
   }
 }
-

@@ -1,4 +1,5 @@
 import 'package:amaliyot2/pages/create_account_page.dart';
+import 'package:amaliyot2/pages/home_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -13,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: CreateAccountPage(),
+      home: HomePage(),
     );
   }
 }
