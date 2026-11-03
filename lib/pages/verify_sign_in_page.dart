@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../backgrounds/create_account_background.dart';
 import '../services/auth_service.dart';
-import '../widgets/custom_input.dart';
+import '../widgets/sign_in_bottom.dart';
 
 class VerifySignInPage extends StatefulWidget {
   final String phoneNumber;
@@ -16,35 +16,22 @@ class VerifySignInPage extends StatefulWidget {
 }
 
 class _VerifySignInPageState extends State<VerifySignInPage> {
+  static const Color _teal = Color(0xFF009577);
+  static const int _codeLength = 6; // backendchi tasdiqlasin
+  static const int _timerSeconds = 47;
+
   final TextEditingController _codeController = TextEditingController();
 
-  String? _codeError;
-  bool _isSubmitting = false;
-
-  static const int _resendSeconds = 47;
-  int _secondsLeft = _resendSeconds;
   Timer? _timer;
+  int _secondsLeft = _timerSeconds;
+
+  String? _codeError;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _startTimer();
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    setState(() {
-      _secondsLeft = _resendSeconds;
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsLeft == 0) {
-        timer.cancel();
-      } else {
-        setState(() {
-          _secondsLeft--;
-        });
-      }
-    });
   }
 
   @override
@@ -54,275 +41,302 @@ class _VerifySignInPageState extends State<VerifySignInPage> {
     super.dispose();
   }
 
-  String? _validateCode(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      return 'Please enter the code.';
-    }
-    return null;
+  void _startTimer() {
+    _timer?.cancel();
+    setState(() => _secondsLeft = _timerSeconds);
+    _timer = Timer.periodic( Duration(seconds: 1), (t) {
+      if (_secondsLeft <= 1) {
+        t.cancel();
+      }
+      if (mounted) {
+        setState(() => _secondsLeft--);
+      }
+    });
   }
 
-  Future<void> _handleResend() async {
-    if (_secondsLeft != 0) return;
-
+  Future<void> _resendCode() async {
+    if (_secondsLeft > 0) return;
+    setState(() => _codeError = null);
     try {
       await AuthService.login(widget.phoneNumber);
       _startTimer();
     } catch (e) {
-      setState(() {
-        _codeError = 'Internetni tekshiring, so\'rov yuborilmadi.';
-      });
+      if (!mounted) return;
+      setState(() => _codeError = 'Could not resend the code. Try again.');
     }
   }
 
-  Future<void> _handleSubmit() async {
-    final codeError = _validateCode(_codeController.text);
+  Future<void> _submit() async {
+    final code = _codeController.text.trim();
+
+    if (code.isEmpty) {
+      setState(() => _codeError = 'Please enter the code.');
+      return;
+    }
+    if (code.length < _codeLength) {
+      setState(() => _codeError = 'Enter the full $_codeLength-digit code.');
+      return;
+    }
 
     setState(() {
-      _codeError = codeError;
-    });
-
-    if (_codeError != null || _isSubmitting) return;
-
-    setState(() {
-      _isSubmitting = true;
+      _codeError = null;
+      _isLoading = true;
     });
 
     try {
-      final response = await AuthService.verifyLogin(
-        widget.phoneNumber,
-        _codeController.text.trim(),
-      );
+      await AuthService.verifyLogin(widget.phoneNumber, code);
+      if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        if (!mounted) return;
-        // TODO: Login muvaffaqiyatli tasdiqlandi — Home/Dashboard sahifasi
-        // tayyor bo'lgach, shu yerga Navigator.pushReplacement qo'shiladi.
-      } else {
-        setState(() {
-          _codeError = 'Kod noto\'g\'ri. Qaytadan urinib ko\'ring.';
-        });
-      }
+      // TODO: HomePage tayyor, shu yerga o'tish:
+      // Navigator.pushAndRemoveUntil(
+      //   context,
+      //   MaterialPageRoute(builder: (_) => const MainPage()),
+      //   (route) => false,
+      // );
     } catch (e) {
-      setState(() {
-        _codeError = 'Internetni tekshiring, so\'rov yuborilmadi.';
-      });
+      if (!mounted) return;
+      setState(() => _codeError = 'Invalid or expired code. Please try again.');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _buildResendRow() {
+    if (_secondsLeft > 0) {
+      return Row(
+        children: [
+          Text(
+            'Resend code ',
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          Text(
+            '${_secondsLeft}s',
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+        ],
+      );
+    }
+    return GestureDetector(
+      onTap: _resendCode,
+      child: Text(
+        'Resend code',
+        style: GoogleFonts.montserrat(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: _teal,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool hasError = _codeError != null;
+
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: SizedBox.expand(
-        child: Stack(
-          children: [
-
-            Positioned.fill(
-              child: CreateAccountBackground(),
-            ),
-
-            SafeArea(child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 24),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+           CreateAccountBackground(),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding:  EdgeInsets.symmetric(horizontal: 24),
               child: Column(
-
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: 17),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
+                   SizedBox(height: 110),
 
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.arrow_back,
-                              color: Color(0xFF00897B),
-                            ),
+                  // Title
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          'SMS verification',
+                          style: GoogleFonts.brunoAceSc(
+                            fontSize: 28,
+                            color: Colors.black,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                offset:  Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
                         ),
-
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.black12),
-                          ),
-                          child: Row(
-                            children: [
-                              Text("UZ", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                              SizedBox(width: 8),
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Color(0xFF00897B),
-                                child: Text("ENG", style: TextStyle(fontSize: 10, color: Colors.white)),
-                              ),
-                              SizedBox(width: 8),
-                              Text("RU", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            ],
+                         SizedBox(height: 4),
+                        Text(
+                          'House engine',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  SizedBox(height: 60),
+                   SizedBox(height: 24),
 
+                  // Info box
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
-                      color: Color(0xFFE6F4F1),
-                      shape: BoxShape.circle,
+                      color:  Color(0xFFF3F3F6),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      Icons.message_outlined,
-                      color: Color(0xFF009577),
-                      size: 28,
+                    child: Row(
+                      children: [
+                         Icon(
+                          Icons.chat_bubble_outline,
+                          color: _teal,
+                          size: 18,
+                        ),
+                         SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Enter the code from the SMS to confirm your application',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 10,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  SizedBox(height: 20),
+                   SizedBox(height: 24),
 
+                  // Label
                   Text(
-                    'SMS verification',
-                    style: GoogleFonts.brunoAce(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF1D1D1D),
+                    'Enter your code',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      color: Colors.black,
                     ),
                   ),
+                   SizedBox(height: 8),
 
-                  Text(
-                    'House engine',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      height: 1.0,
-                      letterSpacing: 0,
-                      color: Color(0xFF909090),
-                    ),
-                  ),
-
-                  SizedBox(height: 12),
-
-                  Text(
-                    'Enter the code from the SMS application',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF909090),
-                    ),
-                  ),
-
-                  SizedBox(height: 40),
-
-                  CustomInput(
-                    label: 'Enter your code',
-                    hintText: '12345',
+                  // Code input
+                  TextField(
                     controller: _codeController,
-                    errorText: _codeError,
                     keyboardType: TextInputType.number,
+                    maxLength: _codeLength,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) {
                       if (_codeError != null) {
                         setState(() => _codeError = null);
                       }
                     },
-                  ),
-
-                  SizedBox(height: 12),
-
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      onTap: _handleResend,
-                      child: Text(
-                        _secondsLeft == 0
-                            ? 'Resend code'
-                            : 'Resend code ${_secondsLeft}s',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: _secondsLeft == 0
-                              ? Color(0xFF009577)
-                              : Color(0xFF909090),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      letterSpacing: 4,
+                    ),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: '_ _ _ _ _ _',
+                      hintStyle: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: Colors.grey.shade400,
+                        letterSpacing: 2,
+                      ),
+                      contentPadding:  EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: hasError ? Colors.red : Colors.grey.shade400,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: hasError ? Colors.red : _teal,
+                          width: 1.5,
                         ),
                       ),
                     ),
                   ),
 
-                  SizedBox(height: 30),
-
-                  GestureDetector(
-                    onTap: _isSubmitting ? null : _handleSubmit,
-                    child: Container(
-                      width: double.infinity,
-                      height: 56,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF009577),
-                        borderRadius: BorderRadius.circular(999),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x40000000),
-                            offset: Offset(0, 4),
-                            blurRadius: 10,
-                            spreadRadius: 0,
-                          ),
-                        ],
+                  // Error
+                  if (hasError) ...[
+                     SizedBox(height: 6),
+                    Text(
+                      _codeError!,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        color: Colors.red,
                       ),
-                      child: _isSubmitting
-                          ? SizedBox(
-                        width: 24,
-                        height: 24,
+                    ),
+                  ],
+
+                  const SizedBox(height: 10),
+
+                  // Timer / Resend
+                  _buildResendRow(),
+
+                   SizedBox(height: 20),
+
+                  // Submit
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _teal,
+                        disabledBackgroundColor: _teal.withValues(alpha: 0.6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ?  SizedBox(
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(
-                          color: Color(0xFFF0EBE5),
                           strokeWidth: 2,
+                          color: Colors.white,
                         ),
                       )
                           : Text(
                         'Submit',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          height: 1.5,
-                          letterSpacing: 0,
-                          color: Color(0xFFF0EBE5),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14,
+                          color: Colors.white,
                         ),
                       ),
                     ),
                   ),
 
+                   SizedBox(height: 260),
                 ],
               ),
-            ))
-          ],
-        ),
+            ),
+          ),
+
+          // Pastki "Don't have an account? Sign up" bezagi
+           Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SignInBottom(),
+          ),
+        ],
       ),
     );
   }

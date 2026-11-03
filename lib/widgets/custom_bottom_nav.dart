@@ -42,7 +42,7 @@ class CustomBottomNav extends StatelessWidget {
                 bottom: 0,
                 child: Container(
                   height: 64,
-                  decoration:  BoxDecoration(
+                  decoration: BoxDecoration(
                     color: primary,
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(24),
@@ -57,14 +57,14 @@ class CustomBottomNav extends StatelessWidget {
                           behavior: HitTestBehavior.opaque,
                           onTap: () => onTap(i),
                           child: Padding(
-                            padding:  EdgeInsets.only(bottom: 8),
+                            padding: EdgeInsets.only(bottom: 8),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 // Tanlangan icon dumaloq ichida ko'rinadi,
                                 // shuning uchun bu yerda yashiramiz
                                 AnimatedOpacity(
-                                  duration:  Duration(milliseconds: 200),
+                                  duration: Duration(milliseconds: 200),
                                   opacity: selected ? 0 : 1,
                                   child: Icon(
                                     _items[i]['icon'] as IconData,
@@ -72,7 +72,7 @@ class CustomBottomNav extends StatelessWidget {
                                     size: 22,
                                   ),
                                 ),
-                                 SizedBox(height: 2),
+                                SizedBox(height: 2),
                                 Text(
                                   _items[i]['label'] as String,
                                   style: GoogleFonts.montserrat(
@@ -95,7 +95,7 @@ class CustomBottomNav extends StatelessWidget {
 
               // Siljib yuradigan dumaloq
               AnimatedPositioned(
-                duration:  Duration(milliseconds: 300),
+                duration: Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 left: circleLeft,
                 bottom: 22,
@@ -109,7 +109,7 @@ class CustomBottomNav extends StatelessWidget {
                       border: Border.all(color: Colors.white, width: 3),
                     ),
                     child: AnimatedSwitcher(
-                      duration:  Duration(milliseconds: 250),
+                      duration: Duration(milliseconds: 250),
                       transitionBuilder: (child, animation) =>
                           ScaleTransition(scale: animation, child: child),
                       child: Icon(

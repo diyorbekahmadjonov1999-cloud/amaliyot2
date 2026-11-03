@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../widgets/custom_bottom_nav.dart';
+
+import '../widgets/header_actions.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,9 +12,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   static const Color primary = Color(0xFF009577);
-
-  String _selectedLang = 'ENG';
-  int _currentIndex = 0;
 
   // Hozircha statik ma'lumot (keyin API'dan olinadi)
   final String _userName = 'Ali';
@@ -33,12 +31,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Pastki navigatsiya endi MainPage ichida, shuning uchun bu yerda yo'q.
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          // Pastda 110 px bo'sh joy: navigatsiya kontentni yopib qo'ymasligi uchun
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -62,10 +62,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
-      ),
     );
   }
 
@@ -78,71 +74,8 @@ class _HomePageState extends State<HomePage> {
           'Home',
           style: GoogleFonts.brunoAceSc(fontSize: 24, color: Colors.black),
         ),
-        Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.notifications_none,
-                  size: 18, color: primary),
-            ),
-            const SizedBox(width: 10),
-            _buildLangSwitch(),
-          ],
-        ),
+        const HeaderActions(),
       ],
-    );
-  }
-
-  Widget _buildLangSwitch() {
-    final langs = ['UZ', 'ENG', 'RU'];
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: langs.map((l) {
-          final selected = l == _selectedLang;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedLang = l),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: selected ? primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                l,
-                style: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : primary,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
     );
   }
 

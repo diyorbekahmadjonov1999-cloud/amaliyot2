@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../backgrounds/create_account_background.dart';
@@ -84,7 +85,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         MaterialPageRoute(
           builder: (context) => CarDetailsPage(
             fullName: _fullNameController.text.trim(),
-            phoneNumber: _phoneController.text.trim(),
+            // Controllerda faqat 9 ta raqam bor, +998 ni qo'shib yuboramiz
+            phoneNumber: '+998${_phoneController.text.trim()}',
           ),
         ),
       );
@@ -98,7 +100,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       body: SizedBox.expand(
         child: Stack(
           children: [
-
             // 1-QAVAT:
             Positioned.fill(
               child: CreateAccountBackground(),
@@ -110,135 +111,142 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
               child: CreateAccountBottom(),
             ),
 
-
             // 2-QAVAT:
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 17),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.arrow_back,
+                              color: Color(0xFF00897B),
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.black12),
+                            ),
+                            child: Row(
+                              children: [
+                                Text("UZ",
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey)),
+                                SizedBox(width: 8),
+                                CircleAvatar(
+                                  radius: 12,
+                                  backgroundColor: Color(0xFF00897B),
+                                  child: Text("ENG",
+                                      style: TextStyle(
+                                          fontSize: 10, color: Colors.white)),
+                                ),
+                                SizedBox(width: 8),
+                                Text("RU",
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-            SafeArea(child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
+                    SizedBox(height: 80),
 
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: 17),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Text(
+                      'Create Account',
+                      style: GoogleFonts.brunoAce(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF1D1D1D),
+                      ),
+                    ),
+
+                    Text(
+                      'House engine',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.0,
+                        letterSpacing: 0,
+                        color: Color(0xFF909090),
+                      ),
+                    ),
+
+                    SizedBox(height: 50),
+
+                    Column(
                       children: [
-
-                        Container(
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.arrow_back,
-                            color: Color(0xFF00897B),
-                          ),
+                        CustomInput(
+                          label: 'Full name',
+                          hintText: 'Alisherov Alisher',
+                          controller: _fullNameController,
+                          errorText: _fullNameError,
+                          onChanged: (_) {
+                            if (_fullNameError != null) {
+                              setState(() => _fullNameError = null);
+                            }
+                          },
                         ),
 
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.black12),
-                          ),
-                          child: Row(
-                            children: [
-                              Text("UZ", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                              SizedBox(width: 8),
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Color(0xFF00897B),
-                                child: Text("ENG", style: TextStyle(fontSize: 10, color: Colors.white)),
-                              ),
-                              SizedBox(width: 8),
-                              Text("RU", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            ],
-                          ),
+                        SizedBox(height: 24),
+
+                        CustomInput(
+                          label: 'Phone number',
+                          hintText: '(99) 928-48-14',
+                          controller: _phoneController,
+                          errorText: _phoneError,
+                          keyboardType: TextInputType.phone,
+                          prefixText: '+998 ',
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(
+                                _requiredPhoneDigits),
+                          ],
+                          onChanged: (_) {
+                            if (_phoneError != null) {
+                              setState(() => _phoneError = null);
+                            }
+                          },
                         ),
                       ],
                     ),
-                  ),
 
-                  SizedBox(height: 80),
+                    SizedBox(height: 24),
 
-                  Text(
-                    'Create Account',
-                    style: GoogleFonts.brunoAce(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w400,
-                      color: Color(0xFF1D1D1D),
+                    CreateAccountButtons(
+                      onClear: _handleClear,
+                      onContinue: _handleContinue,
                     ),
-                  ),
-
-                  Text(
-                    'House engine',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      height: 1.0,
-                      letterSpacing: 0,
-                      color: Color(0xFF909090),
-                    ),
-                  ),
-
-                  SizedBox(height: 50),
-
-                  Column(
-                    children: [
-                      CustomInput(
-                        label: 'Full name',
-                        hintText: 'Alisherov Alisher',
-                        controller: _fullNameController,
-                        errorText: _fullNameError,
-                        onChanged: (_) {
-                          if (_fullNameError != null) {
-                            setState(() => _fullNameError = null);
-                          }
-                        },
-                      ),
-
-                      SizedBox(height: 24),
-
-                      CustomInput(
-                        label: 'Phone number',
-                        hintText: '(99) 928-48-14',
-                        controller: _phoneController,
-                        errorText: _phoneError,
-                        keyboardType: TextInputType.phone,
-                        onChanged: (_) {
-                          if (_phoneError != null) {
-                            setState(() => _phoneError = null);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 24),
-
-                  CreateAccountButtons(
-                    onClear: _handleClear,
-                    onContinue: _handleContinue,
-                  ),
-
-                ],
+                  ],
+                ),
               ),
-            ))
+            ),
           ],
         ),
-
-
       ),
     );
   }

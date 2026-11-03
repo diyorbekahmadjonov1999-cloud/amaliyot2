@@ -4,10 +4,12 @@ import 'package:flutter/services.dart';
 class CustomInput extends StatelessWidget {
   final String label;
   final String hintText;
-  final TextEditingController? controller;
+  final TextEditingController controller;
   final String? errorText;
-  final TextInputType keyboardType;
+  final TextInputType? keyboardType;
   final ValueChanged<String>? onChanged;
+
+  // Yangi ixtiyoriy parametrlar (eski chaqiruvlar buzilmaydi)
   final String? prefixText;
   final List<TextInputFormatter>? inputFormatters;
 
@@ -15,108 +17,85 @@ class CustomInput extends StatelessWidget {
     super.key,
     required this.label,
     required this.hintText,
-    this.controller,
+    required this.controller,
     this.errorText,
-    this.keyboardType = TextInputType.text,
+    this.keyboardType,
     this.onChanged,
     this.prefixText,
     this.inputFormatters,
   });
 
-  static const Color _errorColor = Color(0xFFFF5A5A);
-  static const Color _defaultBorderColor = Color(0xFFC7C7CC);
+  OutlineInputBorder _border(Color color) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: color, width: 1),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bool hasError = errorText != null && errorText!.isNotEmpty;
-    final Color borderColor = hasError ? _errorColor : _defaultBorderColor;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontFamily: 'Montserrat',
+          style: const TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            height: 1.0,
             color: Color(0xFF1D1D1D),
           ),
         ),
-
-        SizedBox(height: 10),
-
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            onChanged: onChanged,
-            inputFormatters: inputFormatters,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          onChanged: onChanged,
+          inputFormatters: inputFormatters,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 16,
+            color: Color(0xFF1D1D1D),
+          ),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: const TextStyle(
+              fontFamily: 'Poppins',
               fontSize: 14,
-              fontWeight: FontWeight.w400,
+              color: Color(0xFFB0B0B0),
+            ),
+            prefixText: prefixText,
+            prefixStyle: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
               color: Color(0xFF1D1D1D),
             ),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFFB5B5BA),
-              ),
-
-              // Telefon uchun doim ko'rinadigan "+998 " prefiksi
-              prefixText: prefixText,
-              prefixStyle: TextStyle(
-                fontFamily: 'Montserrat',
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: Color(0xFF1D1D1D),
-              ),
-
-              // Matnni ramka ichida ushlab turadi
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
-
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: borderColor,
-                  width: 1,
-                ),
-              ),
-
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: borderColor,
-                  width: 1,
-                ),
-              ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            enabledBorder: _border(
+              errorText != null ? Colors.red : const Color(0xFFD0D0D0),
             ),
+            focusedBorder: _border(
+              errorText != null ? Colors.red : const Color(0xFF00897B),
+            ),
+            border: _border(const Color(0xFFD0D0D0)),
           ),
         ),
-
-        // Xato matni
-        if (hasError) ...[
-          SizedBox(height: 6),
-          Text(
-            errorText!,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: _errorColor,
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Text(
+              errorText!,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                color: Colors.red,
+              ),
             ),
           ),
-        ],
       ],
     );
   }
