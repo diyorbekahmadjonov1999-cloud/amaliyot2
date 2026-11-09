@@ -1,12 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../backgrounds/create_account_background.dart';
 import '../widgets/create_account_bottom.dart';
 import '../widgets/custom_input.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
+import '../services/auth_service.dart';
+import 'verify_register_page.dart';
 
 class CarMileagePage extends StatefulWidget {
   final String fullName;
@@ -44,6 +45,19 @@ class _CarMileagePageState extends State<CarMileagePage> {
     super.dispose();
   }
 
+  // Backendga register so'rovini yuboradi (kod yuborish ham shu orqali)
+  Future<http.Response> _sendRegister(int carKm, String carNumber) {
+    return AuthService.register(
+      fullName: widget.fullName,
+      phoneNumber: widget.phoneNumber,
+      brandId: widget.brandId,
+      carModelId: widget.carModelId,
+      carYear: widget.carYear,
+      carKm: carKm,
+      carNumber: carNumber,
+    );
+  }
+
   Future<void> _handleSignUp() async {
     final mileageText = _mileageController.text.trim();
     final carNumberText = _carNumberController.text.trim();
@@ -73,36 +87,54 @@ class _CarMileagePageState extends State<CarMileagePage> {
       _submitError = null;
     });
 
+    final carKm = int.parse(mileageText);
+
     try {
-      final response = await http.post(
-        Uri.parse(ApiConfig.register),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'fullName': widget.fullName,
-          'phoneNumber': widget.phoneNumber,
-          'brandId': widget.brandId,
-          'carModelId': widget.carModelId,
-          'carYear': widget.carYear,
-          'carKm': int.parse(mileageText),
-          'carNumber': carNumberText,
-        }),
-      );
+      final response = await _sendRegister(carKm, carNumberText);
+      debugPrint('REGISTER ${response.statusCode}: ${response.body}');
+      try {
+        final bodyData = jsonDecode(response.body);
+        final otpCode = bodyData['otp'] ?? bodyData['code'];
+        if (otpCode != null) {
+          debugPrint('\n=============================================');
+          debugPrint('🔑🔑🔑 ENG YANGI OTP KOD: $otpCode 🔑🔑🔑');
+          debugPrint('=============================================\n');
+        }
+      } catch (_) {}
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
-        // TODO: keyingi ekranga o'tish (masalan, SMS tasdiqlash — verify-register)
+        // Bir martalik kod yuborildi, kod kiritish sahifasiga o'tamiz
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VerifyRegisterPage(
+              phoneNumber: widget.phoneNumber,
+              onResend: () async {
+                final r = await _sendRegister(carKm, carNumberText);
+                if (r.statusCode != 200) {
+                  throw Exception('Resend failed: ${r.statusCode}');
+                }
+              },
+            ),
+          ),
+        );
       } else {
         setState(() {
           _submitError = 'Xatolik yuz berdi: ${response.statusCode}';
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _submitError = 'Internetni tekshiring, so\'rov yuborilmadi.';
       });
     } finally {
-      setState(() {
-        _isSubmitting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -259,7 +291,7 @@ class _CarMileagePageState extends State<CarMileagePage> {
 
                   // To'liq kenglikdagi Sign up tugmasi
                   GestureDetector(
-                    onTap: _handleSignUp,
+                    onTap: _isSubmitting ? null : _handleSignUp,
                     child: Container(
                       width: double.infinity,
                       height: 56,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,7 +59,17 @@ class _VerifySignInPageState extends State<VerifySignInPage> {
     if (_secondsLeft > 0) return;
     setState(() => _codeError = null);
     try {
-      await AuthService.login(widget.phoneNumber);
+      final response = await AuthService.login(widget.phoneNumber);
+      debugPrint('RESEND LOGIN ${response.statusCode}: ${response.body}');
+      try {
+        final bodyData = jsonDecode(response.body);
+        final otpCode = bodyData['otp'] ?? bodyData['code'];
+        if (otpCode != null) {
+          debugPrint('\n=============================================');
+          debugPrint('🔑🔑🔑 ENG YANGI OTP KOD: $otpCode 🔑🔑🔑');
+          debugPrint('=============================================\n');
+        }
+      } catch (_) {}
       _startTimer();
     } catch (e) {
       if (!mounted) return;

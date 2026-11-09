@@ -1,24 +1,82 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
-import '../config/api_config.dart';
+import 'package:http/http.dart' as http;
+import 'package:amaliyot2/config/api_config.dart';
 
 class AuthService {
-  // POST /api/auth/login  ->  body: { "phoneNumber": "+998..." }
-  static Future<http.Response> login(String phoneNumber) {
-    return http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'phoneNumber': phoneNumber}),
+  static const Map<String, String> _headers = {
+    'Content-Type': 'application/json',
+  };
+
+  static Future<http.Response> _post(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}$path'),
+      headers: _headers,
+      body: jsonEncode(body),
     );
+
+    print('\n\n**************************************************');
+    print('🌐 API SO\'ROV: $path');
+    print('STATUS: ${response.statusCode}');
+    print('JAVOB: ${response.body}');
+    try {
+      final data = jsonDecode(response.body);
+      if (data is Map && (data.containsKey('otp') || data.containsKey('code'))) {
+        final code = data['otp'] ?? data['code'];
+        print('🔑🔑🔑 BIR MARTALIK KOD: $code 🔑🔑🔑');
+      }
+    } catch (_) {}
+    print('**************************************************\n\n');
+
+    return response;
   }
 
-  // POST /api/auth/verify-login  ->  body: { "phoneNumber": "+998...", "code": "12345" }
+  // ---------- SIGN UP ----------
+
+  /// POST /api/auth/register
+  static Future<http.Response> register({
+    required String fullName,
+    required String phoneNumber,
+    required int brandId,
+    required int carModelId,
+    required int carYear,
+    required int carKm,
+    required String carNumber,
+  }) {
+    return _post('/api/auth/register', {
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+      'brandId': brandId,
+      'carModelId': carModelId,
+      'carYear': carYear,
+      'carKm': carKm,
+      'carNumber': carNumber,
+    });
+  }
+
+  /// POST /api/auth/verify-register
+  static Future<http.Response> verifyRegister(String phoneNumber, String code) {
+    return _post('/api/auth/verify-register', {
+      'phoneNumber': phoneNumber,
+      'code': code,
+    });
+  }
+
+  // ---------- SIGN IN ----------
+
+  /// POST /api/auth/login
+  static Future<http.Response> login(String phoneNumber) {
+    return _post('/api/auth/login', {'phoneNumber': phoneNumber});
+  }
+
+  /// POST /api/auth/verify-login
   static Future<http.Response> verifyLogin(String phoneNumber, String code) {
-    return http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/auth/verify-login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'phoneNumber': phoneNumber, 'code': code}),
-    );
+    return _post('/api/auth/verify-login', {
+      'phoneNumber': phoneNumber,
+      'code': code,
+    });
   }
 }

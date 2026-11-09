@@ -10,5 +10,3 @@ class ApiConfig {
   static const String carBrands = '$baseUrl/api/cars/brands';
   static String carModels(int brandId) => '$baseUrl/api/cars/models/$brandId';
 }
-
-

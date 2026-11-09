@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:amaliyot2/pages/verify_sign_in_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -67,6 +68,16 @@ class _SignInPageState extends State<SignInPage> {
 
     try {
       final response = await AuthService.login(fullPhone);
+      debugPrint('LOGIN ${response.statusCode}: ${response.body}');
+      try {
+        final bodyData = jsonDecode(response.body);
+        final otpCode = bodyData['otp'] ?? bodyData['code'];
+        if (otpCode != null) {
+          debugPrint('\n=============================================');
+          debugPrint('🔑🔑🔑 ENG YANGI OTP KOD: $otpCode 🔑🔑🔑');
+          debugPrint('=============================================\n');
+        }
+      } catch (_) {}
 
       if (response.statusCode == 200) {
         if (!mounted) return;
